@@ -12,4 +12,4 @@ llvm-project-17.0.2.src.tar.xz
 .vscode/
 
 # 忽略 hw1 的備份（裡面有包含我自己創建的 edge test: test3.c）
-hw1_backup_11132025
+# hw1_backup_11132025
