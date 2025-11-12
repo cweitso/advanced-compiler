@@ -34,10 +34,6 @@ test2: hw1.so
 	$(MAKE) SOURCE_FILE=test2.c test
 	$(MAKE) SOURCE_FILE=test2.c run
 
-test3: hw1.so
-	$(MAKE) SOURCE_FILE=test3.c test
-	$(MAKE) SOURCE_FILE=test3.c run
-
 # Check results against answers
 check1: test1
 	@if [ -f hw1_checker.py ] && [ -f test1_answer.json ]; then \
@@ -53,12 +49,5 @@ check2: test2
 		echo "Missing hw1_checker.py or test2_answer.json"; \
 	fi
 
-check3: test3
-	@if [ -f hw1_checker.py ] && [ -f test3_answer.json ]; then \
-		python3 hw1_checker.py test3_answer.json test3.json; \
-	else \
-		echo "Missing hw1_checker.py or test3_answer.json"; \
-	fi
-
 clean:
-	rm -f *.o *.ll *.so *test1.json *test2.json *test3.json
+	rm -f *.o *.ll *.so *test1.json *test2.json

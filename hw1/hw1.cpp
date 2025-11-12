@@ -8,18 +8,18 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/IR/Constants.h"
-#include "llvm/ADT/SmallVector.h" // 為了 Try to utilize ADT in your project
+#include "llvm/ADT/SmallVector.h"
 #include <map>
 #include <vector>
 #include <set>
 #include <string>
-#include <climits> // 為了 LLONG_MAX, LLONG_MIN
+#include <climits> // For LLONG_MAX, LLONG_MIN
 
 using namespace llvm;
 
 namespace {
 
-// 輔助函式 1: 最大公因數 (GCD)
+// 最大公因數 (GCD)
 long long gcd(long long a, long long b) {
     while (b) {
         a %= b;
@@ -28,9 +28,7 @@ long long gcd(long long a, long long b) {
     return a;
 }
 
-// 輔助函式 2: 擴展歐幾里得演算法
-// 找出 x, y 使得 a*x + b*y = gcd(a, b)
-// 我們傳入的 a, b 會被修改，所以使用 long long& x, y
+// Extended 歐幾里得演算法: 求解 a*x + b*y = gcd(a, b)
 void extendedEuclidean(long long a, long long b, long long &x, long long &y) {
     long long x1 = 0, y1 = 1, x0 = 1, y0 = 0;
     while (b) {
@@ -51,13 +49,12 @@ void extendedEuclidean(long long a, long long b, long long &x, long long &y) {
     y = y0;
 }
 
-// 輔助函式 3: 求解 t 的邊界
-// L <= C + t*S < U
+// 求解 t 的邊界: L <= C + t*S < U
 void solveBounds(long long L, long long U, long long C, long long S, 
-                   long long &t_min, long long &t_max) {
+                 long long &t_min, long long &t_max) {
     if (S == 0) {
-        if (L <= C && C < U) return; // 條件成立，t 的範圍不變
-        t_min = 1; t_max = 0; // 條件不成立，無解
+        if (L <= C && C < U) return;  // 條件成立，t 範圍不變
+        t_min = 1; t_max = 0;         // 條件不成立，無解
         return;
     }
     
@@ -71,37 +68,36 @@ void solveBounds(long long L, long long U, long long C, long long S,
     if (S > 0) {
         // t >= ceil(R_min / S)
         t_min_new = (R_min > 0 && R_min % S != 0) ? (R_min / S) + 1 : (R_min / S);
-        
         // t <= floor(R_max_inclusive / S)
-        t_max_new = (R_max_inclusive < 0 && R_max_inclusive % S != 0) ? (R_max_inclusive / S) - 1 : (R_max_inclusive / S);
-        
+        t_max_new = (R_max_inclusive < 0 && R_max_inclusive % S != 0) ? 
+                    (R_max_inclusive / S) - 1 : (R_max_inclusive / S);
     } else { // S < 0
         // t*S >= R_min => t <= floor(R_min / S)
         t_max_new = (R_min > 0 && R_min % S != 0) ? (R_min / S) - 1 : (R_min / S);
-        
         // t*S <= R_max_inclusive => t >= ceil(R_max_inclusive / S)
-        t_min_new = (R_max_inclusive < 0 && R_max_inclusive % S != 0) ? (R_max_inclusive / S) + 1 : (R_max_inclusive / S);
+        t_min_new = (R_max_inclusive < 0 && R_max_inclusive % S != 0) ? 
+                    (R_max_inclusive / S) + 1 : (R_max_inclusive / S);
     }
     
     t_min = std::max(t_min, t_min_new);
     t_max = std::min(t_max, t_max_new);
 }
 
-// Data structure to store array access information
+// 陣列存取資訊
 struct ArrayAccess {
-    std::string arrayName;
-    int stmtNum;
-    bool isStore;
-    Value *basePtr;
-    int coefficient;
-    int constant;
-    Instruction *inst;
+    std::string arrayName;  // 陣列名稱
+    int stmtNum;           // 語句編號
+    bool isStore;          // true: Store, false: Load
+    Value *basePtr;        // 基底指標
+    int coefficient;       // 索引係數 (c in c*i+d)
+    int constant;          // 索引常數 (d in c*i+d)
+    Instruction *inst;     // 對應的 LLVM 指令
     
     ArrayAccess() : stmtNum(0), isStore(false), basePtr(nullptr), 
                     coefficient(1), constant(0), inst(nullptr) {}
 };
 
-// Dependence record
+// Dependency 記錄
 struct Dependence {
     std::string array;
     int src_stmt;
@@ -118,22 +114,22 @@ struct Dependence {
     }
 };
 
+// HW1 Bonus: Mixin Pattern
 class HW1Pass : public PassInfoMixin<HW1Pass> {
 public:
     PreservedAnalyses run(Function &F, FunctionAnalysisManager &FAM);
     
 private:
-    // std::vector<ArrayAccess> arrayAccesses;
-    llvm::SmallVector<ArrayAccess> arrayAccesses;
+    llvm::SmallVector<ArrayAccess> arrayAccesses;  // 使用 LLVM ADT
     std::map<Value*, std::string> arrayNameMap;
     int stmtCounter = 0;
     
     int loopStart = 0;
     int loopEnd = 0;
     
-    std::set<Dependence> flowDeps;
-    std::set<Dependence> antiDeps;
-    std::set<Dependence> outputDeps;
+    std::set<Dependence> flowDeps;    // Flow Dependence
+    std::set<Dependence> antiDeps;    // Anti Dependence
+    std::set<Dependence> outputDeps;  // Output Dependence
     
     void analyzeLoop(Loop *L);
     bool extractIndexExpression(Value *idx, Value *inductionVar, 
@@ -145,18 +141,18 @@ private:
 };
 
 std::string HW1Pass::getArrayName(Value *ptr) {
-    // Try direct lookup
+    // 直接查表
     if (arrayNameMap.find(ptr) != arrayNameMap.end()) {
         return arrayNameMap[ptr];
     }
     
-    // Try to extract from GetElementPtr
+    // 從 GetElementPtr 提取
     if (auto *gep = dyn_cast<GetElementPtrInst>(ptr)) {
         Value *base = gep->getPointerOperand();
         return getArrayName(base);
     }
     
-    // Check if it has a name
+    // 檢查是否有名字
     if (ptr->hasName()) {
         return ptr->getName().str();
     }
@@ -169,25 +165,26 @@ bool HW1Pass::extractIndexExpression(Value *idx, Value *inductionVar,
     coeff = 0;
     constant = 0;
     
-    // Case 1: idx is the induction variable itself (i)
+    // Case 1: idx 就是 induction variable (i)
     if (idx == inductionVar) {
         coeff = 1;
         constant = 0;
         return true;
     }
     
-    // Case 2: idx is a constant
+    // Case 2: idx 是常數
     if (auto *CI = dyn_cast<ConstantInt>(idx)) {
         coeff = 0;
         constant = CI->getSExtValue();
         return true;
     }
 
+    // 處理 type cast
     if (auto *cast = dyn_cast<CastInst>(idx)) {
         return extractIndexExpression(cast->getOperand(0), inductionVar, coeff, constant);
     }
 
-    // Case 3: idx is a binary operation
+    // Case 3: idx 是 binary 運算
     if (auto *binOp = dyn_cast<BinaryOperator>(idx)) {
         unsigned opcode = binOp->getOpcode();
         Value *op0 = binOp->getOperand(0);
@@ -229,23 +226,13 @@ bool HW1Pass::extractIndexExpression(Value *idx, Value *inductionVar,
         }
     }
     
-    // Case 4: idx might be a Load of the induction variable
-    if (auto *LI = dyn_cast<LoadInst>(idx)) {
-        // Sometimes the induction variable is loaded before use
-        // We need to trace back
-        return false; // For now, we don't handle this
-    }
-    
     return false;
 }
 
 void HW1Pass::analyzeInstructionSequence(BasicBlock *BB, Value *inductionVar) {
-    // 處理 Load 和 Store 指令
     for (auto &I : *BB) {
         if (auto *SI = dyn_cast<StoreInst>(&I)) {
             Value *ptr = SI->getPointerOperand();
-            
-            // ptr 是一個 Value，需要找到定義它的 GEP 指令
             GetElementPtrInst *gep = dyn_cast<GetElementPtrInst>(ptr);
             
             if (gep) {
@@ -255,7 +242,7 @@ void HW1Pass::analyzeInstructionSequence(BasicBlock *BB, Value *inductionVar) {
                 access.basePtr = gep->getPointerOperand();
                 access.arrayName = getArrayName(access.basePtr);
                 
-                // 獲取最後一個索引
+                // 取最後一個索引
                 Value *idxVal = nullptr;
                 for (auto idx = gep->idx_begin(); idx != gep->idx_end(); ++idx) {
                     idxVal = idx->get();
@@ -263,8 +250,7 @@ void HW1Pass::analyzeInstructionSequence(BasicBlock *BB, Value *inductionVar) {
                 
                 if (idxVal && extractIndexExpression(idxVal, inductionVar, 
                                                     access.coefficient, access.constant)) {
-                    // Store 遞增語句編號
-                    access.stmtNum = ++stmtCounter;
+                    access.stmtNum = ++stmtCounter;  // Store 遞增語句編號
                     arrayAccesses.push_back(access);
                     
                     errs() << "  Store to " << access.arrayName 
@@ -275,8 +261,6 @@ void HW1Pass::analyzeInstructionSequence(BasicBlock *BB, Value *inductionVar) {
             
         } else if (auto *LI = dyn_cast<LoadInst>(&I)) {
             Value *ptr = LI->getPointerOperand();
-            
-            // 同樣地，找到產生這個指標的 GEP 指令
             GetElementPtrInst *gep = dyn_cast<GetElementPtrInst>(ptr);
             
             if (gep) {
@@ -293,8 +277,7 @@ void HW1Pass::analyzeInstructionSequence(BasicBlock *BB, Value *inductionVar) {
                 
                 if (idxVal && extractIndexExpression(idxVal, inductionVar, 
                                                     access.coefficient, access.constant)) {
-                    // Load 使用當前的語句編號（Store 尚未遞增）
-                    access.stmtNum = stmtCounter + 1;
+                    access.stmtNum = stmtCounter + 1;  // Load 使用當前語句編號
                     arrayAccesses.push_back(access);
                     
                     errs() << "  Load from " << access.arrayName 
@@ -309,18 +292,17 @@ void HW1Pass::analyzeInstructionSequence(BasicBlock *BB, Value *inductionVar) {
 void HW1Pass::analyzeLoop(Loop *L) {
     errs() << "Analyzing loop...\n";
     
-    // Get loop header
     BasicBlock *header = L->getHeader();
     BasicBlock *latch = L->getLoopLatch();
     
-    // Find induction variable (PHINode in header)
+    // 找 induction variable (PHI node in header)
     Value *inductionVar = nullptr;
     
     for (auto &I : *header) {
         if (auto *phi = dyn_cast<PHINode>(&I)) {
             inductionVar = phi;
             
-            // Extract initial value
+            // 取初始值
             for (unsigned i = 0; i < phi->getNumIncomingValues(); i++) {
                 BasicBlock *incomingBB = phi->getIncomingBlock(i);
                 if (incomingBB != latch) {
@@ -339,7 +321,7 @@ void HW1Pass::analyzeLoop(Loop *L) {
         return;
     }
     
-    // Find loop bound from exit condition
+    // 從 exit condition 找 loop bound
     SmallVector<BasicBlock*, 4> exitingBlocks;
     L->getExitingBlocks(exitingBlocks);
     
@@ -348,7 +330,6 @@ void HW1Pass::analyzeLoop(Loop *L) {
             if (auto *br = dyn_cast<BranchInst>(&I)) {
                 if (br->isConditional()) {
                     if (auto *cmp = dyn_cast<ICmpInst>(br->getCondition())) {
-                        // Check if comparing with induction variable
                         if (auto *CI = dyn_cast<ConstantInt>(cmp->getOperand(1))) {
                             loopEnd = CI->getSExtValue();
                             errs() << "  Loop end: " << loopEnd << "\n";
@@ -362,13 +343,11 @@ void HW1Pass::analyzeLoop(Loop *L) {
         }
     }
     
-    // Reset statement counter
     stmtCounter = 0;
     
-    // Analyze array accesses in loop body
+    // 分析 loop body 中的陣列存取
     errs() << "Array accesses:\n";
     for (auto *BB : L->blocks()) {
-        // if (BB == header) continue; // Skip header
         analyzeInstructionSequence(BB, inductionVar);
     }
     
@@ -379,11 +358,10 @@ void HW1Pass::computeDependences() {
     errs() << "Computing dependences...\n";
     errs() << "  Loop range: [" << loopStart << ", " << loopEnd << ")\n";
     
-    // 將 loopStart 和 loopEnd 轉為 long long
     long long L = loopStart;
     long long U = loopEnd;
 
-// For each pair of array accesses (S_src -> S_dst)
+    // 檢查每對陣列存取 (S_src -> S_dst)
     for (size_t i = 0; i < arrayAccesses.size(); i++) {
         for (size_t j = 0; j < arrayAccesses.size(); j++) {
             
@@ -393,23 +371,19 @@ void HW1Pass::computeDependences() {
             // 1. 決定相依性類型
             std::set<Dependence> *depSet = nullptr;
             if (S_src.isStore && !S_dst.isStore) {
-                depSet = &flowDeps; // Write -> Read
+                depSet = &flowDeps;    // Write -> Read
             } else if (!S_src.isStore && S_dst.isStore) {
-                depSet = &antiDeps; // Read -> Write
+                depSet = &antiDeps;    // Read -> Write
             } else if (S_src.isStore && S_dst.isStore) {
-                depSet = &outputDeps; // Write -> Write
+                depSet = &outputDeps;  // Write -> Write
             } else {
-                continue; // Read -> Read, no dependence
+                continue;  // Read -> Read, no dependence
             }
             
             // 2. 必須是同一個陣列
             if (S_src.arrayName != S_dst.arrayName) continue;
 
-            // 3. 建立 Diophantine 方程式
-            // S_src: c1*i1 + d1
-            // S_dst: c2*i2 + d2
-            // 求解 c1*i1 + d1 = c2*i2 + d2  =>  c1*i1 - c2*i2 = d2 - d1
-            
+            // 3. 建立 Diophantine 方程: c1*i1 - c2*i2 = d2 - d1
             long long c1 = S_src.coefficient, d1 = S_src.constant;
             long long c2 = S_dst.coefficient, d2 = S_dst.constant;
             
@@ -417,50 +391,41 @@ void HW1Pass::computeDependences() {
             long long b = -c2;
             long long C = d2 - d1;
 
-            // 4. GCD 測試 (是否有解)
+            // 4. GCD 測試
             long long g = gcd(a, b);
             
             if (g == 0) {
-                // 兩個索引都是常數（c1=0 且 c2=0）
+                // 兩個索引都是常數
                 if (d1 == d2) {
-                    // 常數索引相同，例如 A[5] 和 A[5]
                     Dependence dep;
                     dep.array = S_src.arrayName;
                     dep.src_stmt = S_src.stmtNum;
-                    dep.src_idx = d1;        // 使用實際常數值
+                    dep.src_idx = d1;
                     dep.dst_stmt = S_dst.stmtNum;
-                    dep.dst_idx = d2;        // d1 == d2，所以這裡可以用 d1 或 d2
+                    dep.dst_idx = d2;
                     depSet->insert(dep);
                 }
-                // 否則 d1 != d2，常數不同，無相依性
                 continue;
             }
 
             if (C % g != 0) {
-                continue;
+                continue;  // 無整數解
             }
-            
-            /* 
-            long long g = gcd(a, b);
-            if (C % g != 0) {
-                continue; // 無整數解，不可能相依
-            } 
-            */
 
-            // 5. 求一組特殊解 (i1_0, i2_0)
+            // 5. 用 Extended Euclidean 求特解
             long long x_prime, y_prime;
-            extendedEuclidean(a, b, x_prime, y_prime); // 解 a*x' + b*y' = g
+            extendedEuclidean(a, b, x_prime, y_prime);
             
             long long i1_0 = x_prime * (C / g);
-            long long i2_0 = y_prime * (C / g); // 注意：這是 x, y 的解，i2_0 對應 y
+            long long i2_0 = y_prime * (C / g);
 
-            // 6. 找出一般解
+            // 6. 一般解
             // i1(t) = i1_0 + t * (b/g)
             // i2(t) = i2_0 - t * (a/g)
             long long step_i1 = b / g;
             long long step_i2 = -a / g;
 
-            // 7. 找出 t 的有效範圍
+            // 7. 求 t 的有效範圍
             long long t_min = -LLONG_MAX;
             long long t_max = LLONG_MAX;
             
@@ -470,39 +435,25 @@ void HW1Pass::computeDependences() {
             // 邊界 2: loopStart <= i2(t) < loopEnd
             solveBounds(L, U, i2_0, step_i2, t_min, t_max);
 
-            // 邊界 3: 執行順序 (Temporal Order)
-            // S_src 必須在 S_dst 之前執行
-            // (i1 < i2) OR (i1 == i2 AND S_src.stmtNum < S_dst.stmtNum)
-            
+            // 邊界 3: 時間順序
             if (S_src.stmtNum < S_dst.stmtNum) {
-                // S_src 敘述在前，允許 i1 <= i2
-                // i1(t) <= i2(t)
-                // i1_0 + t*step_i1 <= i2_0 + t*step_i2
-                // t * (step_i1 - step_i2) <= i2_0 - i1_0
+                // S_src 在前，允許 i1 <= i2
                 solveBounds(-LLONG_MAX, (i2_0 - i1_0) + 1, 0, (step_i1 - step_i2), t_min, t_max);
             } else {
-                // S_src 敘述在後 (S_src.stmtNum > S_dst.stmtNum)
-                // 或是 S_src 和 S_dst 是同一個敘述 (S_src.stmtNum == S_dst.stmtNum)
-                // 這兩種情況都必須是 loop-carried，即 i1 < i2
-                // i1(t) < i2(t)
-                // t * (step_i1 - step_i2) < i2_0 - i1_0
+                // S_src 在後或同敘述，必須 i1 < i2 (loop-carried)
                 solveBounds(-LLONG_MAX, (i2_0 - i1_0), 0, (step_i1 - step_i2), t_min, t_max);
             }
             
-            // 8. 迭代 t，產生所有相依性
-            if (t_min > t_max) continue; // 範圍無效
+            // 8. 產生所有相依性
+            if (t_min > t_max) continue;
             
             for (long long t = t_min; t <= t_max; t++) {
                 Dependence dep;
                 dep.array = S_src.arrayName;
                 dep.src_stmt = S_src.stmtNum;
-                dep.src_idx = i1_0 + t * step_i1;
+                dep.src_idx = (int)(i1_0 + t * step_i1);
                 dep.dst_stmt = S_dst.stmtNum;
-                dep.dst_idx = i2_0 + t * step_i2;
-                
-                // 必須是 int
-                dep.src_idx = (int)dep.src_idx;
-                dep.dst_idx = (int)dep.dst_idx;
+                dep.dst_idx = (int)(i2_0 + t * step_i2);
                 
                 depSet->insert(dep);
             }
@@ -582,10 +533,10 @@ void HW1Pass::outputJSON(const std::string &filename) {
 PreservedAnalyses HW1Pass::run(Function &F, FunctionAnalysisManager &FAM) {
     errs() << "[HW1]: " << F.getName() << '\n';
     
-    // Get loop info
+    // Get loop info.
     auto &LI = FAM.getResult<LoopAnalysis>(F);
     
-    // Build array name map from allocas
+    // 從 alloca 建立陣列名稱對應表
     errs() << "Building array name map...\n";
     for (auto &BB : F) {
         for (auto &I : BB) {
@@ -599,7 +550,7 @@ PreservedAnalyses HW1Pass::run(Function &F, FunctionAnalysisManager &FAM) {
         }
     }
     
-    // Process each loop
+    // 處理每個 loop
     int loopCount = 0;
     for (auto *L : LI) {
         loopCount++;
@@ -611,10 +562,10 @@ PreservedAnalyses HW1Pass::run(Function &F, FunctionAnalysisManager &FAM) {
         errs() << "Warning: No loops found in function!\n";
     }
     
-    // Compute dependences
+    // 計算相依性
     computeDependences();
     
-    // Output to JSON file
+    // 輸出 JSON
     std::string moduleName = F.getParent()->getSourceFileName();
     if (moduleName.empty()) {
         moduleName = F.getParent()->getName().str();
@@ -625,7 +576,6 @@ PreservedAnalyses HW1Pass::run(Function &F, FunctionAnalysisManager &FAM) {
         moduleName = moduleName.substr(0, dotPos);
     }
     
-    // Remove path if present
     size_t slashPos = moduleName.rfind('/');
     if (slashPos != std::string::npos) {
         moduleName = moduleName.substr(slashPos + 1);
