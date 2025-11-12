@@ -1,5 +1,5 @@
 # 在 ADVANCED_COMPILER 根目錄建立 .gitignore
-# 忽略整個 LLVM 原始碼目錄，因為您只引用它，不追蹤其變更
+# 忽略整個 LLVM 原始碼目錄，因為只引用它，不追蹤其變更
 llvm-project-17.0.2.src/
 
 # 忽略 LLVM 編譯目錄
@@ -8,7 +8,7 @@ llvm_build/
 # 忽略原始壓縮檔
 llvm-project-17.0.2.src.tar.xz
 
-# 忽略 VS Code 相關設定 (可選，但推薦)
+# 忽略 VS Code 相關設定 (optional)
 .vscode/
 
 # 忽略 hw1 的備份（裡面有包含我自己創建的 edge test: test3.c）
