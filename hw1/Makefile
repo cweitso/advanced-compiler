@@ -1,5 +1,6 @@
 LLVM_CONFIG ?= /home/DannyTso/advanced_compiler/llvm_build/bin/llvm-config
 
+CC=`$(LLVM_CONFIG) --bindir`/clang
 CXX=`$(LLVM_CONFIG) --bindir`/clang++
 CXXFLAGS=`$(LLVM_CONFIG) --cppflags` -fPIC -fno-rtti
 LDFLAGS=`$(LLVM_CONFIG) --ldflags`
@@ -19,7 +20,7 @@ hw1.so: hw1.cpp
 	$(CXX) -shared -o $@ $< $(CXXFLAGS) $(LDFLAGS)
 
 $(IR_FILE): $(SOURCE_FILE)
-	$(CXX) $(IRFLAGS) -o $@ $<
+	$(CC) $(IRFLAGS) -o $@ $<
 	$(OPT) -S -passes=mem2reg,loop-rotate,loop-simplify $@ -o $@
 
 run: $(IR_FILE) hw1.so
