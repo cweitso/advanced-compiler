@@ -29,7 +29,7 @@ for (i = 4; i < 20; i++) {
 
 ### 2.1 核心演算法
 
-本實作**基於 Diophantine 方程求解法（based on and inspired by** https://drive.google.com/file/d/1R9UMQL_K4Qj_YAlq1e9BtA4VxLtDUydr/view**）**來判定資料相依性，而非暴力枚舉。
+本實作 **基於 Diophantine 方程求解法（based on and inspired by** **https://drive.google.com/file/d/1R9UMQL_K4Qj_YAlq1e9BtA4VxLtDUydr/view）** 來判定資料相依性，而非暴力枚舉。
 
 ### 步驟 1: 建立 Diophantine 方程
 
