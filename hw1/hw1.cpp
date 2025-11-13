@@ -83,7 +83,7 @@ void solveBounds(long long L, long long U, long long C, long long S,
     t_max = std::min(t_max, t_max_new);
 }
 
-// 陣列存取資訊
+// 陣列存取 info
 struct ArrayAccess {
     std::string arrayName;  // 陣列名稱
     int stmtNum;           // 語句編號
@@ -152,7 +152,7 @@ std::string HW1Pass::getArrayName(Value *ptr) {
         return getArrayName(base);
     }
     
-    // 檢查是否有名字
+    // 檢查有無名字
     if (ptr->hasName()) {
         return ptr->getName().str();
     }
@@ -277,7 +277,7 @@ void HW1Pass::analyzeInstructionSequence(BasicBlock *BB, Value *inductionVar) {
                 
                 if (idxVal && extractIndexExpression(idxVal, inductionVar, 
                                                     access.coefficient, access.constant)) {
-                    access.stmtNum = stmtCounter + 1;  // Load 使用當前語句編號
+                    access.stmtNum = stmtCounter + 1;  // Load 使用當前語句 num
                     arrayAccesses.push_back(access);
                     
                     errs() << "  Load from " << access.arrayName 
@@ -368,7 +368,7 @@ void HW1Pass::computeDependences() {
             auto &S_src = arrayAccesses[i];
             auto &S_dst = arrayAccesses[j];
             
-            // 1. 決定相依性類型
+            // 決定 dependency type
             std::set<Dependence> *depSet = nullptr;
             if (S_src.isStore && !S_dst.isStore) {
                 depSet = &flowDeps;    // Write -> Read
@@ -380,10 +380,10 @@ void HW1Pass::computeDependences() {
                 continue;  // Read -> Read, no dependence
             }
             
-            // 2. 必須是同一個陣列
+            // Must access the same array
             if (S_src.arrayName != S_dst.arrayName) continue;
 
-            // 3. 建立 Diophantine 方程: c1*i1 - c2*i2 = d2 - d1
+            // Build Diophantine Equation: c1*i1 - c2*i2 = d2 - d1
             long long c1 = S_src.coefficient, d1 = S_src.constant;
             long long c2 = S_dst.coefficient, d2 = S_dst.constant;
             
@@ -391,11 +391,11 @@ void HW1Pass::computeDependences() {
             long long b = -c2;
             long long C = d2 - d1;
 
-            // 4. GCD 測試
+            // GCD Testing
             long long g = gcd(a, b);
             
             if (g == 0) {
-                // 兩個索引都是常數
+                // 兩個索引都須是常數
                 if (d1 == d2) {
                     Dependence dep;
                     dep.array = S_src.arrayName;
@@ -412,20 +412,20 @@ void HW1Pass::computeDependences() {
                 continue;  // 無整數解
             }
 
-            // 5. 用 Extended Euclidean 求特解
+            // 用 Extended Euclidean 求特解
             long long x_prime, y_prime;
             extendedEuclidean(a, b, x_prime, y_prime);
             
             long long i1_0 = x_prime * (C / g);
             long long i2_0 = y_prime * (C / g);
 
-            // 6. 一般解
+            // 求一般解
             // i1(t) = i1_0 + t * (b/g)
             // i2(t) = i2_0 - t * (a/g)
             long long step_i1 = b / g;
             long long step_i2 = -a / g;
 
-            // 7. 求 t 的有效範圍
+            // 求 t 的有效範圍
             long long t_min = -LLONG_MAX;
             long long t_max = LLONG_MAX;
             
@@ -440,11 +440,11 @@ void HW1Pass::computeDependences() {
                 // S_src 在前，允許 i1 <= i2
                 solveBounds(-LLONG_MAX, (i2_0 - i1_0) + 1, 0, (step_i1 - step_i2), t_min, t_max);
             } else {
-                // S_src 在後或同敘述，必須 i1 < i2 (loop-carried)
+                // S_src 在後或同，必須 i1 < i2 (loop-carried)
                 solveBounds(-LLONG_MAX, (i2_0 - i1_0), 0, (step_i1 - step_i2), t_min, t_max);
             }
             
-            // 8. 產生所有相依性
+            // 產生所有的 dependency
             if (t_min > t_max) continue;
             
             for (long long t = t_min; t <= t_max; t++) {
@@ -533,7 +533,7 @@ void HW1Pass::outputJSON(const std::string &filename) {
 PreservedAnalyses HW1Pass::run(Function &F, FunctionAnalysisManager &FAM) {
     errs() << "[HW1]: " << F.getName() << '\n';
     
-    // Get loop info.
+    // Get loop info
     auto &LI = FAM.getResult<LoopAnalysis>(F);
     
     // 從 alloca 建立陣列名稱對應表
@@ -565,7 +565,7 @@ PreservedAnalyses HW1Pass::run(Function &F, FunctionAnalysisManager &FAM) {
     // 計算相依性
     computeDependences();
     
-    // 輸出 JSON
+    // 輸出 JSON，大功告成！
     std::string moduleName = F.getParent()->getSourceFileName();
     if (moduleName.empty()) {
         moduleName = F.getParent()->getName().str();
@@ -587,7 +587,7 @@ PreservedAnalyses HW1Pass::run(Function &F, FunctionAnalysisManager &FAM) {
     return PreservedAnalyses::all();
 }
 
-} // end anonymous namespace
+} 
 
 extern "C" ::llvm::PassPluginLibraryInfo LLVM_ATTRIBUTE_WEAK
 llvmGetPassPluginInfo() {
