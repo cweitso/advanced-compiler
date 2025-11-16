@@ -51,4 +51,4 @@ check2: test2
 	fi
 
 clean:
-	rm -f *.o *.ll *.so *test1.json *test2.json
+	rm -f *.o *.ll *.so test1.json test2.json
