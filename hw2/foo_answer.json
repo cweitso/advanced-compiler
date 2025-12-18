@@ -1,0 +1,76 @@
+{
+  "S1": {
+    "TREF": ["b", "c"],
+    "TGEN": ["a"],
+    "DEP": [],
+    "TDEF": { "a": 1 },
+    "TEQUIV": []
+  },
+  "S2": {
+    "TREF": [],
+    "TGEN": ["p"],
+    "DEP": [],
+    "TDEF": { "a": 1, "p": 2 },
+    "TEQUIV": [["*p", "y"]]
+  },
+  "S3": {
+    "TREF": ["b", "c"],
+    "TGEN": ["d"],
+    "DEP": [],
+    "TDEF": { "a": 1, "p": 2, "d": 3 },
+    "TEQUIV": [["*p", "y"]]
+  },
+  "S4": {
+    "TREF": ["a", "d", "x", "y", "*p"],
+    "TGEN": ["f"],
+    "DEP": [
+      { "var": "a", "src_stmt": 1, "dst_stmt": 4, "type": "flow" },
+      { "var": "d", "src_stmt": 3, "dst_stmt": 4, "type": "flow" }
+    ],
+    "TDEF": { "a": 1, "p": 2, "d": 3, "f": 4 },
+    "TEQUIV": [["*p", "y"]]
+  },
+  "S5": {
+    "TREF": ["a", "d", "x", "y", "*p"],
+    "TGEN": ["g"],
+    "DEP": [
+      { "var": "a", "src_stmt": 1, "dst_stmt": 5, "type": "flow" },
+      { "var": "d", "src_stmt": 3, "dst_stmt": 5, "type": "flow" }
+    ],
+    "TDEF": { "a": 1, "p": 2, "d": 3, "f": 4, "g": 5 },
+    "TEQUIV": [["*p", "y"]]
+  },
+  "S6": {
+    "TREF": ["p", "i"],
+    "TGEN": ["*p", "y"],
+    "DEP": [
+      { "var": "p", "src_stmt": 2, "dst_stmt": 6, "type": "flow" }
+    ],
+    "TDEF": { "a": 1, "p": 2, "d": 3, "f": 4, "g": 5, "*p": 6, "y": 6 },
+    "TEQUIV": [["*p", "y"]]
+  },
+  "S7": {
+    "TREF": ["a", "d", "x", "y", "*p"],
+    "TGEN": ["h"],
+    "DEP": [
+      { "var": "a",  "src_stmt": 1, "dst_stmt": 7, "type": "flow" },
+      { "var": "d",  "src_stmt": 3, "dst_stmt": 7, "type": "flow" },
+      { "var": "y",  "src_stmt": 6, "dst_stmt": 7, "type": "flow" },
+      { "var": "*p", "src_stmt": 6, "dst_stmt": 7, "type": "flow" }
+    ],
+    "TDEF": { "a": 1, "p": 2, "d": 3, "f": 4, "g": 5, "*p": 6, "y": 6, "h": 7 },
+    "TEQUIV": [["*p", "y"]]
+  },
+  "S8": {
+    "TREF": ["y", "*p"],
+    "TGEN": ["f"],
+    "DEP": [
+      { "var": "y",  "src_stmt": 6, "dst_stmt": 8, "type": "flow" },
+      { "var": "*p", "src_stmt": 6, "dst_stmt": 8, "type": "flow" },
+      { "var": "f",  "src_stmt": 4, "dst_stmt": 8, "type": "output" }
+    ],
+    "TDEF": { "a": 1, "p": 2, "d": 3, "f": 8, "g": 5, "*p": 6, "y": 6, "h": 7 },
+    "TEQUIV": [["*p", "y"]]
+  }
+}
+

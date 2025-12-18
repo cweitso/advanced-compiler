@@ -1,0 +1,50 @@
+{
+  "S1": {
+    "TREF": [],
+    "TGEN": ["p"],
+    "DEP": [],
+    "TDEF": { "p": 1 },
+    "TEQUIV": [["*p", "x"]]
+  },
+  "S2": {
+    "TREF": [],
+    "TGEN": ["pp"],
+    "DEP": [],
+    "TDEF": { "p": 1, "pp": 2 },
+    "TEQUIV": [["*p", "x"], ["*pp", "p"], ["**pp", "x"]]
+  },
+  "S3": {
+    "TREF": ["pp"],
+    "TGEN": ["*pp", "p"],
+    "DEP": [
+      { "var": "pp", "src_stmt": 2, "dst_stmt": 3, "type": "flow" },
+      { "var": "p",  "src_stmt": 1, "dst_stmt": 3, "type": "output" }
+    ],
+    "TDEF": { "p": 3, "pp": 2, "*pp": 3 },
+    "TEQUIV": [["*pp", "p"], ["**pp", "y"], ["*p", "y"]]
+  },
+  "S4": {
+    "TREF": ["p", "[*pp]"],
+    "TGEN": ["*p", "y"],
+    "DEP": [
+      { "var": "p",     "src_stmt": 3, "dst_stmt": 4, "type": "flow" },
+      { "var": "[*pp]", "src_stmt": 3, "dst_stmt": 4, "type": "flow" }
+    ],
+    "TDEF": { "p": 3, "pp": 2, "*pp": 3, "*p": 4, "y": 4 },
+    "TEQUIV": [["*pp", "p"], ["**pp", "y"], ["*p", "y"]]
+  },
+  "S5": {
+    "TREF": ["*pp", "pp", "*p", "p", "y", "[**pp]"],
+    "TGEN": ["**pp", "y"],
+    "DEP": [
+      { "var": "*pp", "src_stmt": 3, "dst_stmt": 5, "type": "flow" },
+      { "var": "pp",  "src_stmt": 2, "dst_stmt": 5, "type": "flow" },
+      { "var": "*p",  "src_stmt": 4, "dst_stmt": 5, "type": "flow" },
+      { "var": "p",   "src_stmt": 3, "dst_stmt": 5, "type": "flow" },
+      { "var": "y",   "src_stmt": 4, "dst_stmt": 5, "type": "flow" },
+      { "var": "y",   "src_stmt": 4, "dst_stmt": 5, "type": "output" }
+    ],
+    "TDEF": { "p": 3, "pp": 2, "*pp": 3, "*p": 4, "y": 5, "**pp": 5 },
+    "TEQUIV": [["*pp", "p"], ["**pp", "y"], ["*p", "y"]]
+  }
+}
